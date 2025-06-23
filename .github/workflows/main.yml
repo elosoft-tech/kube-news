@@ -1,0 +1,41 @@
+name: CI-CD
+
+on: 
+  push: 
+    branches: ["main"]
+    
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Autenticação no Docker Hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{secrets.DOCKERHUB_USER}}
+          password: ${{secrets.DOCKERHUB_PWD}}
+      
+      - name: Construção da imagem Docker
+        uses: docker/build-push-action@v6.17.0
+        with: 
+          context: ./src
+          file: ./src/Dockerfile
+          push: true
+          tags: |
+            elosoft/live-kube-news:v${{github.run_number}}
+            elosoft/live-kube-news:latest
+  SECURITY:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        #continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
+          args: ./src #--severity-threshold=high 
